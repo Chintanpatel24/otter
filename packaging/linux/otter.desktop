@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Otter
+Comment=Custom local engine with native desktop interface
+Exec=/home/user/.local/share/otter/otter-engine
+Type=Application
+Terminal=false
+Categories=Utility;Development;
+Icon=/home/user/.local/share/otter/logo.png
+StartupNotify=true

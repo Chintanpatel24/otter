@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>otter.desktop</id>
+  <metadata_license>MIT</metadata_license>
+  <name>Otter</name>
+  <summary>Custom local engine for large language models</summary>
+  <description>
+    Otter provides a native desktop interface for running custom-built local inference engines.
+    It supports model streaming from disk, CUDA acceleration, plugin modules, and multi-model switching.
+  </description>
+  <launchable type="desktop-id">otter.desktop</launchable>
+  <categories>
+    <category>Development</category>
+    <category>Utility</category>
+  </categories>
+  <keywords>
+    <keyword>AI</keyword>
+    <keyword>LLM</keyword>
+    <keyword>Local</keyword>
+    <keyword>Engine</keyword>
+  </keywords>
+  <content_rating type="oars-1.1" />
+</component>

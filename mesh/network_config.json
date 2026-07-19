@@ -1,0 +1,10 @@
+{
+  "mesh_enabled": true,
+  "architecture": "peer-to-peer",
+  "nodes": [
+    {"name":"local-main","address":"localhost","capability":0.95,"load":0.0,"models":[]},
+    {"name":"remote-node-01","address":"192.168.1.100","capability":0.7,"load":0.0,"models":[]}
+  ],
+  "graph_type":"force_direction",
+  "load_display":"bars"
+}
