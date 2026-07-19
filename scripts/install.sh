@@ -1,6 +1,6 @@
 #!/bin/bash
 # Otter Installation Script
-# One-liner install: curl -fsSL https://otter.local/scripts/install.sh | bash
+# One-liner install: curl -fsSL https://raw.githubusercontent.com/Chintanpatel/otter/main/scripts/install.sh | bash
 
 set -euo pipefail
 

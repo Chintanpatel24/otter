@@ -6,13 +6,15 @@
 
 ## Quick Install
 
+macOS/Linux:
 ```bash
-curl -fsSL https://otter.local/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Chintanpatel/otter/main/scripts/install.sh | bash
 ```
 
-macOS: `curl -fsSL https://otter.local/scripts/install_mac.sh | bash`
-
-Windows PowerShell: `iwr -useb https://otter.local/scripts/install_windows.ps1 | iex`
+Windows PowerShell:
+```powershell
+iwr -useb https://raw.githubusercontent.com/Chintanpatel/otter/main/scripts/install_windows.ps1 | iex
+```
 
 The install scripts run terminal ASCII animations showing the otter mascot drawing line-by-line.
 

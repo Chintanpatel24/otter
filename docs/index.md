@@ -11,10 +11,10 @@
 ## Installation
 
 ### One Liner (Linux / macOS)
-`curl -fsSL https://otter.local/scripts/install.sh | bash`
+`curl -fsSL https://raw.githubusercontent.com/Chintanpatel/otter/main/scripts/install.sh | bash`
 
 ### One Liner (Windows PowerShell)
-`iwr -useb https://otter.local/scripts/install_windows.ps1 | iex`
+`iwr -useb https://raw.githubusercontent.com/Chintanpatel/otter/main/scripts/install_windows.ps1 | iex`
 
 ## Configuration
 
