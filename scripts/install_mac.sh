@@ -25,7 +25,7 @@ for i in $(seq 1 25); do
     for j in $(seq 1 $i); do printf "="; done
     for k in $(seq $i 25); do printf " "; done
     printf "] %d%%" $((i * 100 / 25))
-    sleep 0.05
+    sleep 0.03
 done
 printf "\n"
 
@@ -56,6 +56,13 @@ else
 fi
 
 if [ -n "$SRC_DIR" ]; then
+    # Ensure Rust is installed
+    if ! command -v cargo &>/dev/null; then
+        echo "  Rust/Cargo not found. Installing Rust/Cargo automatically..."
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y &>/dev/null || true
+        export PATH="$HOME/.cargo/bin:$PATH"
+    fi
+
     echo "  Building C Engine from source ..."
     if command -v gcc &>/dev/null && command -v make &>/dev/null; then
         (cd "$SRC_DIR" && make clean 2>/dev/null || true; make &>/dev/null || true)

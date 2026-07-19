@@ -27,7 +27,7 @@ for i in $(seq 1 30); do
     for j in $(seq 1 $i); do printf "#"; done
     for k in $(seq $i 30); do printf " "; done
     printf "] %d%%" $((i * 100 / 30))
-    sleep 0.05
+    sleep 0.03
 done
 printf "\n"
 
@@ -58,6 +58,23 @@ else
 fi
 
 if [ -n "$SRC_DIR" ]; then
+    # Ensure Rust is installed
+    if ! command -v cargo &>/dev/null; then
+        echo "  Rust/Cargo not found. Installing Rust/Cargo automatically..."
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y &>/dev/null || true
+        export PATH="$HOME/.cargo/bin:$PATH"
+    fi
+
+    # Ensure system build dependencies on Arch/Cachy or Debian
+    if command -v pacman &>/dev/null; then
+        echo "  Arch/CachyOS detected. Installing system dependencies (may prompt for sudo password)..."
+        sudo pacman -S --needed --noconfirm pkg-config alsa-lib wayland &>/dev/null || true
+    elif command -v apt-get &>/dev/null; then
+        echo "  Debian/Ubuntu detected. Installing system dependencies (may prompt for sudo password)..."
+        sudo apt-get update &>/dev/null || true
+        sudo apt-get install -y pkg-config libasound2-dev libwayland-dev libx11-dev libxcb1-dev libxcursor-dev libxrandr-dev libxi-dev &>/dev/null || true
+    fi
+
     echo "  Building C Engine from source ..."
     if command -v gcc &>/dev/null && command -v make &>/dev/null; then
         (cd "$SRC_DIR" && make clean 2>/dev/null || true; make &>/dev/null || true)
@@ -128,6 +145,6 @@ fi
 
 echo ""
 echo "  Installation complete."
-echo "  Run: otter [open from applications menu if installed]"
+echo "  Run: otter"
 echo "  Config: $CONFIG_DIR/config.json"
 echo ""

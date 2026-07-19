@@ -38,10 +38,31 @@ void tensor_fill(tensor_t* t, float val) {
     }
 }
 
+// Weak symbols for CUDA support so it compiles without nvcc/CUDA toolkit installed
+__attribute__((weak)) int cuda_is_available(void) {
+    return 0;
+}
+
+__attribute__((weak)) int cuda_matmul(const float* a, int a_rows, int a_k,
+                 const float* b, int b_k, int b_cols,
+                 float* out) {
+    (void)a; (void)a_rows; (void)a_k; (void)b; (void)b_k; (void)b_cols; (void)out;
+    return -1;
+}
+
 int tensor_matmul(const float* a, int a_rows, int a_k,
                    const float* b, int b_k, int b_cols,
                    float* out) {
     if (a_k != b_k) return -1;
+
+    // Use CUDA matrix multiplication if available
+    if (cuda_is_available()) {
+        if (cuda_matmul(a, a_rows, a_k, b, b_k, b_cols, out) == 0) {
+            return 0;
+        }
+    }
+
+    // CPU fallback matrix multiplication
     for (int i = 0; i < a_rows; i++) {
         for (int j = 0; j < b_cols; j++) {
             float sum = 0.0f;
