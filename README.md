@@ -3,8 +3,8 @@
 </div>
 
 # Otter
-
-**Otter** is a custom-built local hosting service for large language models. It runs a pure C inference engine with optional CUDA acceleration, streams model weights directly from disk (low memory footprint), and provides a native desktop interface.
+>For now it's only a contribution-only project.
+- **Otter** is a custom-built local hosting service for large language models. It runs a pure C inference engine with optional CUDA acceleration, streams model weights directly from disk (low memory footprint), and provides a native desktop interface.
 
 ## Quick Install
 
