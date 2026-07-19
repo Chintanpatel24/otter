@@ -8,12 +8,12 @@
 
 macOS/Linux:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Chintanpatel/otter/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Chintanpatel24/otter/main/scripts/install.sh | bash
 ```
 
 Windows PowerShell:
 ```powershell
-iwr -useb https://raw.githubusercontent.com/Chintanpatel/otter/main/scripts/install_windows.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/Chintanpatel24/otter/main/scripts/install_windows.ps1 | iex
 ```
 
 The install scripts run terminal ASCII animations showing the otter mascot drawing line-by-line.
