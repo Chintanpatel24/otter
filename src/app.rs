@@ -13,6 +13,7 @@ pub struct OtterApp {
     show_mesh: bool,
     max_tokens: usize,
     temperature: f32,
+    per_model_config: crate::per_model_config::PerModelConfig,
 }
 
 impl Default for OtterApp {
@@ -28,6 +29,7 @@ impl Default for OtterApp {
             show_mesh: false,
             max_tokens: 256,
             temperature: 0.8,
+            per_model_config: crate::per_model_config::PerModelConfig::new(),
         }
     }
 }
@@ -42,6 +44,16 @@ impl OtterApp {
             Ok(msg) => {
                 self.status_line = msg;
                 self.chat_lines.push(("system".to_string(), format!("Engine initialized: {}", path)));
+                if let Some(config) = self.per_model_config.get_for_model(path) {
+                    if let Some(obj) = config.as_object() {
+                        if let Some(max_tok) = obj.get("max_tokens").and_then(|v| v.as_u64()) {
+                            self.max_tokens = max_tok as usize;
+                        }
+                        if let Some(temp) = obj.get("temperature").and_then(|v| v.as_f64()) {
+                            self.temperature = temp as f32;
+                        }
+                    }
+                }
             }
             Err(e) => {
                 self.status_line = format!("Error: {}", e);
@@ -51,14 +63,14 @@ impl OtterApp {
     }
 
     fn send(&mut self) {
-        let text = self.input_text.trim();
+        let text = self.input_text.trim().to_string();
         if text.is_empty() {
             return;
         }
-        self.chat_lines.push(("user".to_string(), text.to_string()));
+        self.chat_lines.push(("user".to_string(), text.clone()));
         self.input_text.clear();
         if self.engine.is_active() {
-            match self.engine.generate_from_text(text) {
+            match self.engine.generate_from_text(&text) {
                 Ok(resp) => self.chat_lines.push(("assistant".to_string(), resp)),
                 Err(e) => self.chat_lines.push(("system".to_string(), format!("Generation error: {}", e))),
             }
@@ -98,6 +110,10 @@ impl eframe::App for OtterApp {
             ctx.set_visuals(visuals);
         }
 
+        if let Some(ref path) = self.model_path {
+            self.per_model_config.set_for_model(path, self.max_tokens, self.temperature);
+        }
+
         // Minimal top bar with branding
         egui::TopBottomPanel::top("top_bar").show(ctx, |ui| {
             ui.horizontal(|ui| {
@@ -114,6 +130,15 @@ impl eframe::App for OtterApp {
                     }
                     if ui.button("Settings").clicked() {
                         self.show_settings = !self.show_settings;
+                    }
+                    if ui.button("Export").clicked() {
+                        crate::export::export_chat_results(&self.chat_lines, "chat_export.txt");
+                        self.status_line = "Chat exported to chat_export.txt".to_string();
+                    }
+                    if ui.button("Update Check").clicked() {
+                        if let Some(msg) = crate::update::check_for_updates() {
+                            self.status_line = format!("Update: {}", msg);
+                        }
                     }
                 });
             });
@@ -135,8 +160,8 @@ impl eframe::App for OtterApp {
                     }
                 }
                 if ui.button("Load").clicked() {
-                    if let Some(p) = &self.model_path {
-                        self.load_model(p);
+                    if let Some(p) = self.model_path.clone() {
+                        self.load_model(&p);
                     }
                 }
             });
@@ -153,11 +178,11 @@ impl eframe::App for OtterApp {
             // Drag and drop zone: accept .gguf files
             let drop_rect = ui.min_rect();
             ui.interact(drop_rect, ui.id().with("drop_zone"), egui::Sense::click_and_drag());
-            let input = ui.ctx().input(|i| i.raw.dragged_files.clone());
+            let input = ui.ctx().input(|i| i.raw.dropped_files.clone());
             if !input.is_empty() {
                 for dropped in input {
                     if let Some(p) = dropped.path {
-                        if p.extension().map(|e| e == "gguf").unwrap_or(false) {
+                        if p.extension().and_then(|s| s.to_str()) == Some("gguf") {
                             let target_dir = std::env::var("HOME").unwrap_or(".".to_string()) + "/.config/otter/models/";
                             std::fs::create_dir_all(&target_dir).unwrap();
                             let file_name = p.file_name().unwrap().to_string_lossy().to_string();
@@ -249,9 +274,9 @@ impl eframe::App for OtterApp {
 
                         // Node visualization with load bars
                         let nodes = vec![
-                            ("local-main", 0.95, 0.35, vec!["otter-base".into()]),
-                            ("remote-01", 0.70, 0.55, vec!["otter-tiny".into()]),
-                            ("remote-02", 0.85, 0.20, vec!["otter-large".into(), "otter-base".into()]),
+                            ("local-main", 0.95, 0.35, vec!["otter-base".to_string()]),
+                            ("remote-01", 0.70, 0.55, vec!["otter-tiny".to_string()]),
+                            ("remote-02", 0.85, 0.20, vec!["otter-large".to_string(), "otter-base".to_string()]),
                         ];
 
                         for (name, cap, load, models) in nodes {
@@ -259,7 +284,7 @@ impl eframe::App for OtterApp {
                                 ui.vertical(|ui| {
                                     ui.set_min_width(80.0);
                                     ui.heading(name);
-                                    ui.label(format!("cap: {:.1f}", cap));
+                                    ui.label(format!("cap: {:.1}", cap));
                                 });
                                 ui.add_space(4.0);
                                 ui.vertical(|ui| {

@@ -1,0 +1,10 @@
+target/
+*.o
+*.so
+*.dylib
+*.dll
+*.exe
+api/server_bin
+api/server_bin.exe
+mesh/mesh
+otter-engine

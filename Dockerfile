@@ -5,7 +5,8 @@ RUN go build -o server_bin server.go
 
 FROM gcc:latest AS engine
 WORKDIR /app
-COPY engine/ .
+COPY Makefile .
+COPY engine/ engine/
 RUN make otter-engine
 
 FROM alpine:latest
