@@ -30,7 +30,7 @@ func chat(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type","application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"id":"otter-req","object":"chat.completion","created":start.Unix(),
-		"model":"otter-base","choices":[map[string]interface{}{"message":map[string]string{"role":"assistant","content":"Response regarding request."},"index":0}],
+		"model":"otter-base","choices":[]map[string]interface{}{{"message":map[string]string{"role":"assistant","content":"Response regarding request."},"index":0}},
 		"usage":map[string]int{"prompt_tokens":10,"completion_tokens":15,"total_tokens":25},
 		"token_rate_per_second":15.5,
 	})
@@ -42,6 +42,7 @@ func main() {
 	http.HandleFunc("/v1/health", health)
 	http.HandleFunc("/v1/models", models)
 	http.HandleFunc("/v1/chat/completions", chat)
+	http.HandleFunc("/v1/stream", streamHandler)
 	http.HandleFunc("/v1/completions", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type","application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
