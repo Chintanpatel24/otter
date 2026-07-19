@@ -1,8 +1,6 @@
 # Otter
 
-[![License](https://img.shields.io/github/license/Chintanpatel/otter?label=MIT)](LICENSE) [![Version](https://img.shields.io/github/v/release/Chintanpatel/otter?label=v1.0.0)](https://github.com/Chintanpatel/otter/releases)
-
-**Otter** is a custom-built local hosting service for large language models. It runs a pure C inference engine with optional CUDA acceleration, streams model weights directly from disk (low memory footprint), and provides a native desktop interface with clean dark (`#121212`) and light (`#ffffff`) themes. No external model libraries are used. No decorative elements. No emojis.
+**Otter** is a custom-built local hosting service for large language models. It runs a pure C inference engine with optional CUDA acceleration, streams model weights directly from disk (low memory footprint), and provides a native desktop interface.
 
 ## Quick Install
 
