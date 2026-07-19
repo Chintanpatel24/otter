@@ -112,6 +112,3 @@ Deploy up to 5 `.gguf` models simultaneously using the mesh framework (`mesh/mes
 ## Drag and Drop
 Drag any `.gguf` file into the sidebar drop zone. The model is saved to `~/.config/otter/models/` and tracked in the registry.
 
-## License
-
-MIT
