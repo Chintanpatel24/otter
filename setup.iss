@@ -5,7 +5,7 @@
 #define AppName "Otter"
 #define AppVersion "1.0.0"
 #define AppPublisher "Otter Team"
-#define AppURL "https://otter.local"
+#define AppURL "https://github.com/Chintanpatel/otter"
 #define AppExeName "otter.exe"
 
 [Setup]

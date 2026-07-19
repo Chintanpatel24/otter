@@ -1,5 +1,5 @@
 # Otter Installation Script for Windows
-# Usage: iwr -useb https://otter.local/scripts/install_windows.ps1 | iex
+# Usage: iwr -useb https://raw.githubusercontent.com/Chintanpatel/otter/main/scripts/install_windows.ps1 | iex
 
 $OtterVersion = "1.0.0"
 $OtterDir = "$env:LOCALAPPDATA\Otter"

@@ -1,6 +1,6 @@
 #!/bin/bash
 # macOS Installation Script for Otter
-# Usage: curl -fsSL https://otter.local/scripts/install_mac.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/Chintanpatel/otter/main/scripts/install_mac.sh | bash
 
 set -euo pipefail
 
