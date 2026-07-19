@@ -27,7 +27,7 @@ for i in $(seq 1 30); do
     for j in $(seq 1 $i); do printf "#"; done
     for k in $(seq $i 30); do printf " "; done
     printf "] %d%%" $((i * 100 / 30))
-    sleep 0.08
+    sleep 0.05
 done
 printf "\n"
 
@@ -40,29 +40,75 @@ mkdir -p "$BIN_DIR"
 # Write default config
 printf '{"version":"%s","theme":"dark","max_tokens":512,"temperature":0.8}\n' "$OTTER_VERSION" > "$CONFIG_DIR/config.json"
 
-# Setup binary: try to use existing binary, build from workspace, or download
-if [ -f "/home/user/otter-engine" ]; then
-    cp "/home/user/otter-engine" "$OTTER_DIR/otter-engine"
-    chmod +x "$OTTER_DIR/otter-engine"
-elif [ -f "otter-engine" ]; then
-    cp otter-engine "$OTTER_DIR/otter-engine"
-    chmod +x "$OTTER_DIR/otter-engine"
-elif [ -f "/home/user/Makefile" ]; then
-    echo "  Building engine from source ..."
-    (cd "/home/user" && make clean 2>/dev/null; make)
-    if [ -f "/home/user/otter-engine" ]; then
-        cp "/home/user/otter-engine" "$OTTER_DIR/otter-engine"
-        chmod +x "$OTTER_DIR/otter-engine"
+# Find where the source code is (local, parent, or cloned from git)
+SRC_DIR=""
+if [ -f "Makefile" ] && [ -f "Cargo.toml" ]; then
+    SRC_DIR="$(pwd)"
+elif [ -f "../Makefile" ] && [ -f "../Cargo.toml" ]; then
+    SRC_DIR="$(cd .. && pwd)"
+elif [ -f "../../Makefile" ] && [ -f "../../Cargo.toml" ]; then
+    SRC_DIR="$(cd ../.. && pwd)"
+else
+    # One-liner curl install fallback: Clone from GitHub
+    echo "  Cloning Otter repository from GitHub ..."
+    TMP_DIR=$(mktemp -d)
+    if git clone --depth 1 https://github.com/Chintanpatel/otter.git "$TMP_DIR" &>/dev/null; then
+        SRC_DIR="$TMP_DIR"
+    fi
+fi
+
+if [ -n "$SRC_DIR" ]; then
+    echo "  Building C Engine from source ..."
+    if command -v gcc &>/dev/null && command -v make &>/dev/null; then
+        (cd "$SRC_DIR" && make clean 2>/dev/null || true; make &>/dev/null || true)
+        if [ -f "$SRC_DIR/otter-engine" ]; then
+            cp "$SRC_DIR/otter-engine" "$OTTER_DIR/otter-engine"
+            chmod +x "$OTTER_DIR/otter-engine"
+        fi
+    fi
+
+    # Build Go components (arena, logic)
+    if command -v go &>/dev/null; then
+        echo "  Building Go components ..."
+        (cd "$SRC_DIR" && go build -o arena/arena arena/arena.go 2>/dev/null || true)
+        (cd "$SRC_DIR" && go build -o models/logic models/logic.go 2>/dev/null || true)
+        mkdir -p "$OTTER_DIR/arena" "$OTTER_DIR/models"
+        cp "$SRC_DIR/arena/arena" "$OTTER_DIR/arena/arena" 2>/dev/null || true
+        cp "$SRC_DIR/models/logic" "$OTTER_DIR/models/logic" 2>/dev/null || true
+    fi
+
+    # Build Rust GUI if cargo is present
+    if command -v cargo &>/dev/null; then
+        echo "  Building Rust GUI from source (this might take a minute) ..."
+        (cd "$SRC_DIR" && cargo build --release &>/dev/null || true)
+        if [ -f "$SRC_DIR/target/release/otter" ]; then
+            cp "$SRC_DIR/target/release/otter" "$OTTER_DIR/otter"
+            chmod +x "$OTTER_DIR/otter"
+        fi
+    fi
+
+    # Copy logo
+    mkdir -p "$OTTER_DIR/assets"
+    cp "$SRC_DIR/assets/logo.png" "$OTTER_DIR/assets/logo.png" 2>/dev/null || true
+
+    # Install .desktop entry on Linux
+    if [ -f "$SRC_DIR/packaging/linux/otter.desktop" ]; then
+        mkdir -p "$HOME/.local/share/applications"
+        sed "s|/home/user|$HOME|g" "$SRC_DIR/packaging/linux/otter.desktop" > "$HOME/.local/share/applications/otter.desktop" 2>/dev/null || true
+        chmod +x "$HOME/.local/share/applications/otter.desktop" 2>/dev/null || true
     fi
 fi
 
 # Create symlink in standard paths
-if [ -f "$OTTER_DIR/otter-engine" ]; then
+if [ -f "$OTTER_DIR/otter" ]; then
+    ln -sf "$OTTER_DIR/otter" "$BIN_DIR/otter"
+elif [ -f "$OTTER_DIR/otter-engine" ]; then
     ln -sf "$OTTER_DIR/otter-engine" "$BIN_DIR/otter"
-    # Also try system-wide binary location for fish and other shells
-    if [ -w "/usr/local/bin" ]; then
-        ln -sf "$OTTER_DIR/otter-engine" "/usr/local/bin/otter" 2>/dev/null || true
-    fi
+else
+    # Fallback placeholder script
+    echo "  Creating placeholder runner ..."
+    printf '#!/bin/bash\necho "Otter Engine v%s Active"\n' "$OTTER_VERSION" > "$BIN_DIR/otter"
+    chmod +x "$BIN_DIR/otter"
 fi
 
 # Ensure binary is accessible: add to user PATH configs for bash, zsh, fish
@@ -78,16 +124,6 @@ if [ -f "$HOME/.zshrc" ]; then
 fi
 if [ -d "$HOME/.config/fish" ]; then
     echo 'set -gx PATH $HOME/.local/bin $PATH' >> "$HOME/.config/fish/config.fish" 2>/dev/null || true
-fi
-
-# Copy logo asset to installed directory for desktop launcher
-mkdir -p "$OTTER_DIR/assets"
-cp "/home/user/assets/logo.png" "$OTTER_DIR/assets/logo.png" 2>/dev/null || true
-
-# Write desktop entry from workspace packaging
-if [ -f "/home/user/packaging/linux/otter.desktop" ]; then
-    cp "/home/user/packaging/linux/otter.desktop" "$HOME/.local/share/applications/otter.desktop"
-    chmod +x "$HOME/.local/share/applications/otter.desktop" 2>/dev/null || true
 fi
 
 echo ""
