@@ -12,6 +12,7 @@ pub struct OtterEngineState {
 
 extern "C" {
     fn otter_init(state: *mut OtterEngineState, model_path: *const c_char) -> c_int;
+    #[allow(dead_code)]
     fn otter_cleanup(state: *mut OtterEngineState);
     fn otter_forward(
         input_ids: *const c_int,
@@ -81,7 +82,7 @@ impl Engine {
             return Err("Forward pass failed".to_string());
         }
         let best_id = unsafe { otter_sample(logits.as_ptr(), 512) };
-        let mut best_ids = [best_id];
+        let best_ids = [best_id];
         let mut buffer = [0i8; 256];
         unsafe {
             otter_detokenize(best_ids.as_ptr(), 1, buffer.as_mut_ptr(), 256);

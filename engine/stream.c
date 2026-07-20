@@ -49,7 +49,6 @@ size_t stream_tell(stream_loader_t* s) {
 
 int stream_read_floats(stream_loader_t* s, float* out, int count) {
     if (!s || !s->file || !out) return 0;
-    size_t bytes_to_read = (size_t)count * sizeof(float);
     size_t read = fread(out, sizeof(float), (size_t)count, s->file);
     s->offset += read * sizeof(float);
     return (int)read;

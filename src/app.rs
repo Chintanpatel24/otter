@@ -1,6 +1,5 @@
 use crate::engine_bindings::Engine;
 use eframe::egui;
-use std::path::PathBuf;
 
 pub struct OtterApp {
     engine: Engine,
