@@ -98,7 +98,7 @@ The `scripts/` folder contains executable installation scripts with progressive 
 The stream loader reads weights in chunks rather than loading the entire model into RAM. CUDA accelerates the projection layer. The engine uses a simplified single-layer demonstration architecture; scaling to deep multi-layer networks requires extending `engine/inference.c` with layer loops and larger weight streams.
 
 ## API Server
-Run `python3 api/server.py` to start the local server. Endpoints:
+Run `go run api/server.go` or build via `scripts/build_api.sh` and run `./api/server_bin` to start the local server. Endpoints:
 - `GET /v1/models` — list available models
 - `GET /v1/health` — health check
 - `POST /v1/chat/completions` — chat with token rate tracking (`token_rate_per_second` in response)
@@ -107,7 +107,7 @@ Run `python3 api/server.py` to start the local server. Endpoints:
 All endpoints return `token_rate_per_second` showing live generation speed.
 
 ## Arena Mode
-Deploy up to 5 `.gguf` models simultaneously using the mesh framework (`mesh/mesh.py`). The GUI Mesh View shows connected hardware nodes with load bars and running model status. Ask one question; all selected models process it in parallel. Results display side-by-side in columns.
+Deploy up to 5 `.gguf` models simultaneously using the mesh framework (`mesh/mesh` coordinator). The GUI Mesh View shows connected hardware nodes with load bars and running model status. Ask one question; all selected models process it in parallel. Results display side-by-side in columns.
 
 ## Drag and Drop
 Drag any `.gguf` file into the sidebar drop zone. The model is saved to `~/.config/otter/models/` and tracked in the registry.

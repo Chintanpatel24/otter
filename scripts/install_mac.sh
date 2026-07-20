@@ -50,11 +50,15 @@ else
     # One-liner curl install fallback: Clone from GitHub or download tarball
     echo "  Cloning Otter repository from GitHub ..."
     TMP_DIR=$(mktemp -d)
-    if git clone --depth 1 https://github.com/Chintanpatel/otter.git "$TMP_DIR" &>/dev/null; then
+    if git clone --depth 1 https://github.com/Chintanpatel24/otter.git "$TMP_DIR" &>/dev/null; then
+        SRC_DIR="$TMP_DIR"
+    elif git clone --depth 1 https://github.com/Chintanpatel/otter.git "$TMP_DIR" &>/dev/null; then
         SRC_DIR="$TMP_DIR"
     else
         echo "  Git clone failed or Git not found. Downloading tarball via curl..."
-        if curl -sSL https://github.com/Chintanpatel/otter/archive/refs/heads/main.tar.gz | tar -xz -C "$TMP_DIR" --strip-components=1 2>/dev/null; then
+        if curl -sSL https://github.com/Chintanpatel24/otter/archive/refs/heads/main.tar.gz | tar -xz -C "$TMP_DIR" --strip-components=1 2>/dev/null; then
+            SRC_DIR="$TMP_DIR"
+        elif curl -sSL https://github.com/Chintanpatel/otter/archive/refs/heads/main.tar.gz | tar -xz -C "$TMP_DIR" --strip-components=1 2>/dev/null; then
             SRC_DIR="$TMP_DIR"
         fi
     fi
@@ -71,27 +75,34 @@ if [ -n "$SRC_DIR" ]; then
 
     echo "  Building C Engine from source ..."
     if command -v gcc &>/dev/null && command -v make &>/dev/null; then
-        (cd "$SRC_DIR" && make clean 2>/dev/null || true; make &>/dev/null || true)
+        (cd "$SRC_DIR" && make clean && make)
         if [ -f "$SRC_DIR/otter-engine" ]; then
             cp "$SRC_DIR/otter-engine" "$OTTER_DIR/otter-engine"
             chmod +x "$OTTER_DIR/otter-engine"
+        else
+            echo "  Error: otter-engine binary not found after make compile." >&2
+            exit 1
         fi
+    else
+        echo "  Error: gcc and make are required to compile the C engine." >&2
+        exit 1
     fi
 
     # Build Go components (arena, logic)
     if command -v go &>/dev/null; then
         echo "  Building Go components ..."
-        (cd "$SRC_DIR" && go build -o arena/arena arena/arena.go 2>/dev/null || true)
-        (cd "$SRC_DIR" && go build -o models/logic models/logic.go 2>/dev/null || true)
+        (cd "$SRC_DIR" && go build -o arena/arena arena/arena.go && go build -o models/logic models/logic.go)
         mkdir -p "$OTTER_DIR/arena" "$OTTER_DIR/models"
-        cp "$SRC_DIR/arena/arena" "$OTTER_DIR/arena/arena" 2>/dev/null || true
-        cp "$SRC_DIR/models/logic" "$OTTER_DIR/models/logic" 2>/dev/null || true
+        cp "$SRC_DIR/arena/arena" "$OTTER_DIR/arena/arena"
+        cp "$SRC_DIR/models/logic" "$OTTER_DIR/models/logic"
+    else
+        echo "  Warning: Go is not installed. Skipping Go components build."
     fi
 
     # Build Rust GUI if cargo is present
     if command -v cargo &>/dev/null; then
         echo "  Building Rust GUI from source (this might take a minute) ..."
-        (cd "$SRC_DIR" && cargo build --release &>/dev/null || true)
+        (cd "$SRC_DIR" && cargo build --release)
         if [ -f "$SRC_DIR/target/release/otter" ]; then
             cp "$SRC_DIR/target/release/otter" "$OTTER_DIR/otter"
             chmod +x "$OTTER_DIR/otter"
@@ -100,7 +111,12 @@ if [ -n "$SRC_DIR" ]; then
 
     # Copy logo
     mkdir -p "$OTTER_DIR/assets"
-    cp "$SRC_DIR/assets/logo.png" "$OTTER_DIR/assets/logo.png" 2>/dev/null || true
+    cp "$SRC_DIR/assets/logo.png" "$OTTER_DIR/assets/logo.png"
+
+    # Copy scripts
+    mkdir -p "$OTTER_DIR/scripts"
+    cp "$SRC_DIR/scripts/fetch.sh" "$OTTER_DIR/scripts/fetch.sh"
+    chmod +x "$OTTER_DIR/scripts/fetch.sh"
 fi
 
 # Create symlink in standard paths
