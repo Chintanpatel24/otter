@@ -46,7 +46,63 @@ $Config = @{
 
 $Config | Out-File -FilePath "$ConfigDir\config.json" -Encoding UTF8
 
-# Setup binary: look for any built binaries or workspace copies
+# Find where the source code is (local, parent, or cloned from git)
+$SrcDir = ""
+if (Test-Path -Path "Makefile" -PathType Leaf) {
+    $SrcDir = (Get-Item .).FullName
+} elseif (Test-Path -Path "..\Makefile" -PathType Leaf) {
+    $SrcDir = (Get-Item ..).FullName
+} elseif (Test-Path -Path "..\..\Makefile" -PathType Leaf) {
+    $SrcDir = (Get-Item ..\..).FullName
+} else {
+    Write-Host "  Source files not found locally. Cloning/Downloading Otter repository..."
+    $TmpDir = [System.IO.Path]::GetTempPath() + "otter_build_" + [System.Guid]::NewGuid().ToString().Substring(0,8)
+    New-Item -ItemType Directory -Force -Path $TmpDir | Out-Null
+
+    # Try git clone first
+    $CloneSuccess = $false
+    try {
+        git clone --depth 1 https://github.com/Chintanpatel24/otter.git $TmpDir 2>$null
+        if (Test-Path -Path "$TmpDir\Cargo.toml") { $CloneSuccess = $true }
+    } catch {}
+
+    if (-not $CloneSuccess) {
+        try {
+            git clone --depth 1 https://github.com/Chintanpatel/otter.git $TmpDir 2>$null
+            if (Test-Path -Path "$TmpDir\Cargo.toml") { $CloneSuccess = $true }
+        } catch {}
+    }
+
+    # Try downloading zip if git failed
+    if (-not $CloneSuccess) {
+        Write-Host "  Git clone failed. Downloading zip via Invoke-WebRequest..."
+        $ZipPath = "$TmpDir\otter.zip"
+        try {
+            Invoke-WebRequest -Uri "https://github.com/Chintanpatel24/otter/archive/refs/heads/main.zip" -OutFile $ZipPath -ErrorAction Stop
+            Expand-Archive -Path $ZipPath -DestinationPath "$TmpDir\extracted" -Force
+            # The zip extracts into a folder named otter-main
+            if (Test-Path -Path "$TmpDir\extracted\otter-main") {
+                Copy-Item -Path "$TmpDir\extracted\otter-main\*" -Destination $TmpDir -Recurse -Force
+                $CloneSuccess = $true
+            }
+        } catch {
+            try {
+                Invoke-WebRequest -Uri "https://github.com/Chintanpatel/otter/archive/refs/heads/main.zip" -OutFile $ZipPath -ErrorAction Stop
+                Expand-Archive -Path $ZipPath -DestinationPath "$TmpDir\extracted" -Force
+                if (Test-Path -Path "$TmpDir\extracted\otter-main") {
+                    Copy-Item -Path "$TmpDir\extracted\otter-main\*" -Destination $TmpDir -Recurse -Force
+                    $CloneSuccess = $true
+                }
+            } catch {}
+        }
+    }
+
+    if ($CloneSuccess) {
+        $SrcDir = $TmpDir
+    }
+}
+
+# Setup binary: look for any built binaries or build from source
 Write-Host "  Setting up binaries ..."
 $SourceExe = ""
 if (Test-Path -Path "$PSScriptRoot\..\target\release\otter.exe") {
@@ -55,16 +111,58 @@ if (Test-Path -Path "$PSScriptRoot\..\target\release\otter.exe") {
     $SourceExe = "target\release\otter.exe"
 } elseif (Test-Path -Path "otter.exe") {
     $SourceExe = "otter.exe"
-} elseif (Test-Path -Path "otter-engine.exe") {
-    $SourceExe = "otter-engine.exe"
 }
 
 if ($SourceExe -ne "") {
     Copy-Item -Path $SourceExe -Destination "$BinDir\otter.exe" -Force
+} elseif ($SrcDir -ne "") {
+    # Ensure cargo is present or download/prompt
+    $HasCargo = $false
+    if (Get-Command cargo -ErrorAction SilentlyContinue) {
+        $HasCargo = $true
+    }
+
+    if ($HasCargo) {
+        Write-Host "  Building Rust GUI from source (this might take a few minutes)..."
+        Push-Location $SrcDir
+        try {
+            cargo build --release
+            Pop-Location
+            if (Test-Path -Path "$SrcDir\target\release\otter.exe") {
+                Copy-Item -Path "$SrcDir\target\release\otter.exe" -Destination "$BinDir\otter.exe" -Force
+                Write-Host "  Built and copied otter.exe successfully."
+            } else {
+                Write-Host "  Error: Built binary not found after cargo build." -ForegroundColor Red
+                exit 1
+            }
+        } catch {
+            Pop-Location
+            Write-Host "  Error: Build failed." -ForegroundColor Red
+            exit 1
+        }
+    } else {
+        Write-Host "  Error: Rust/Cargo is not installed. Unable to compile source." -ForegroundColor Red
+        exit 1
+    }
 } else {
-    # Place a fallback dummy text/script/mock to make sure it's present and working if compiling is not available
-    Write-Output "  Creating placeholder binary ..."
-    "Write-Host 'Otter Engine Active v$OtterVersion'" | Out-File -FilePath "$BinDir\otter.bat" -Encoding UTF8
+    Write-Host "  Error: Source directory could not be resolved." -ForegroundColor Red
+    exit 1
+}
+
+# Copy logo and scripts
+Write-Host "  Copying assets and scripts ..."
+$AssetsDir = "$OtterDir\assets"
+$ScriptsDir = "$OtterDir\scripts"
+New-Item -ItemType Directory -Force -Path $AssetsDir | Out-Null
+New-Item -ItemType Directory -Force -Path $ScriptsDir | Out-Null
+
+if ($SrcDir -ne "") {
+    if (Test-Path -Path "$SrcDir\assets\logo.png") {
+        Copy-Item -Path "$SrcDir\assets\logo.png" -Destination "$AssetsDir\logo.png" -Force
+    }
+    if (Test-Path -Path "$SrcDir\scripts\fetch.ps1") {
+        Copy-Item -Path "$SrcDir\scripts\fetch.ps1" -Destination "$ScriptsDir\fetch.ps1" -Force
+    }
 }
 
 # Ensure binary is in Path
