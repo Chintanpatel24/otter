@@ -67,12 +67,12 @@ if [ -n "$SRC_DIR" ]; then
 
     # Ensure system build dependencies on Arch/Cachy or Debian
     if command -v pacman &>/dev/null; then
-        echo "  Arch/CachyOS detected. Installing system dependencies (may prompt for sudo password)..."
-        sudo pacman -S --needed --noconfirm pkg-config alsa-lib wayland gtk3 &>/dev/null || true
+        echo "  Arch/CachyOS detected. Installing build tools and system dependencies (may prompt for sudo password)..."
+        sudo pacman -S --needed --noconfirm base-devel git gcc make pkg-config alsa-lib wayland gtk3 &>/dev/null || true
     elif command -v apt-get &>/dev/null; then
-        echo "  Debian/Ubuntu detected. Installing system dependencies (may prompt for sudo password)..."
+        echo "  Debian/Ubuntu detected. Installing build tools and system dependencies (may prompt for sudo password)..."
         sudo apt-get update &>/dev/null || true
-        sudo apt-get install -y pkg-config libasound2-dev libwayland-dev libx11-dev libxcb1-dev libxcursor-dev libxrandr-dev libxi-dev libgtk-3-dev &>/dev/null || true
+        sudo apt-get install -y build-essential git gcc make pkg-config libasound2-dev libwayland-dev libx11-dev libxcb1-dev libxcursor-dev libxrandr-dev libxi-dev libgtk-3-dev &>/dev/null || true
     fi
 
     echo "  Building C Engine from source ..."
