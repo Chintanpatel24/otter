@@ -11,7 +11,6 @@ void attention_forward(const float* Q,
                         int d_model,
                         int num_heads,
                         int head_dim) {
-    int total_heads = num_heads * head_dim;
     float scores[256]; /* simplified: assume seq_len <= 256 for demo */
 
     for (int h = 0; h < num_heads; h++) {

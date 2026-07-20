@@ -4,7 +4,7 @@ use std::path::PathBuf;
 fn main() {
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
     let engine_path = PathBuf::from(manifest_dir.as_str()).join("engine");
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let _out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
     let has_nvcc = std::process::Command::new("nvcc")
         .arg("--version")
