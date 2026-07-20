@@ -47,11 +47,16 @@ elif [ -f "../Makefile" ] && [ -f "../Cargo.toml" ]; then
 elif [ -f "../../Makefile" ] && [ -f "../../Cargo.toml" ]; then
     SRC_DIR="$(cd ../.. && pwd)"
 else
-    # One-liner curl install fallback: Clone from GitHub
+    # One-liner curl install fallback: Clone from GitHub or download tarball
     echo "  Cloning Otter repository from GitHub ..."
     TMP_DIR=$(mktemp -d)
     if git clone --depth 1 https://github.com/Chintanpatel/otter.git "$TMP_DIR" &>/dev/null; then
         SRC_DIR="$TMP_DIR"
+    else
+        echo "  Git clone failed or Git not found. Downloading tarball via curl..."
+        if curl -sSL https://github.com/Chintanpatel/otter/archive/refs/heads/main.tar.gz | tar -xz -C "$TMP_DIR" --strip-components=1 2>/dev/null; then
+            SRC_DIR="$TMP_DIR"
+        fi
     fi
 fi
 
@@ -61,6 +66,7 @@ if [ -n "$SRC_DIR" ]; then
         echo "  Rust/Cargo not found. Installing Rust/Cargo automatically..."
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y &>/dev/null || true
         export PATH="$HOME/.cargo/bin:$PATH"
+        source "$HOME/.cargo/env" 2>/dev/null || true
     fi
 
     echo "  Building C Engine from source ..."
