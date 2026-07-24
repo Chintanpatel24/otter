@@ -126,7 +126,42 @@ impl Default for OtterApp {
 
 impl OtterApp {
     pub fn new(_cc: &eframe::CreationContext) -> Self {
-        Self::default()
+        let mut app = Self::default();
+        if let Ok(config_str) = crate::config::load_config() {
+            if let Ok(saved) = serde_json::from_str::<serde_json::Value>(&config_str) {
+                if let Some(theme) = saved.get("theme").and_then(|v| v.as_str()) {
+                    app.dark_mode = theme == "dark";
+                }
+                if let Some(max_tok) = saved.get("max_tokens").and_then(|v| v.as_u64()) {
+                    app.max_tokens = max_tok as usize;
+                }
+                if let Some(temp) = saved.get("temperature").and_then(|v| v.as_f64()) {
+                    app.temperature = temp as f32;
+                }
+                if let Some(path) = saved.get("model_path").and_then(|v| v.as_str()) {
+                    if std::path::Path::new(path).exists() {
+                        app.model_path = Some(path.to_string());
+                        app.load_model(path);
+                    }
+                }
+            }
+        }
+        app
+    }
+
+    fn persist_settings(&self) {
+        let mut obj = serde_json::Map::new();
+        obj.insert("version".to_string(), serde_json::Value::String("1.0.0".to_string()));
+        obj.insert("theme".to_string(), serde_json::Value::String(if self.dark_mode { "dark".to_string() } else { "light".to_string() }));
+        obj.insert("max_tokens".to_string(), serde_json::Value::from(self.max_tokens));
+        obj.insert("temperature".to_string(), serde_json::Value::from(self.temperature));
+        obj.insert("platform".to_string(), serde_json::Value::String(if cfg!(target_os = "windows") { "windows".to_string() } else { "linux".to_string() }));
+        if let Some(ref path) = self.model_path {
+            obj.insert("model_path".to_string(), serde_json::Value::String(path.clone()));
+        }
+        if let Ok(config_str) = serde_json::to_string_pretty(&serde_json::Value::Object(obj)) {
+            let _ = crate::config::save_config(&config_str);
+        }
     }
 
     fn load_model(&mut self, path: &str) {
@@ -144,6 +179,7 @@ impl OtterApp {
                         }
                     }
                 }
+                self.persist_settings();
             }
             Err(e) => {
                 self.status_line = format!("Error: {}", e);
@@ -228,6 +264,7 @@ impl eframe::App for OtterApp {
                     // Styled buttons
                     if ui.button(if self.dark_mode { "☀ Light" } else { "🌙 Dark" }).clicked() {
                         self.dark_mode = !self.dark_mode;
+                        self.persist_settings();
                     }
 
                     if ui.button("⚙ Settings").clicked() {
@@ -650,8 +687,12 @@ impl eframe::App for OtterApp {
                     ui.add_space(8.0);
                     ui.horizontal(|ui| {
                         ui.label("Theme Profile:");
-                        ui.selectable_value(&mut self.dark_mode, true, "Dark Mode");
-                        ui.selectable_value(&mut self.dark_mode, false, "Light Mode");
+                        if ui.selectable_value(&mut self.dark_mode, true, "Dark Mode").clicked() {
+                            self.persist_settings();
+                        }
+                        if ui.selectable_value(&mut self.dark_mode, false, "Light Mode").clicked() {
+                            self.persist_settings();
+                        }
                     });
                     ui.add_space(10.0);
                     ui.separator();
@@ -661,6 +702,10 @@ impl eframe::App for OtterApp {
                     }
                 });
         }
+    }
+
+    fn save(&mut self, _storage: &mut dyn eframe::Storage) {
+        self.persist_settings();
     }
 }
 
